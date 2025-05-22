@@ -6,27 +6,57 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
         .status { font-size: 24px; margin-top: 20px; }
+        .players { font-size: 18px; margin-top: 10px; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <h1>Minecraft Server Status</h1>
     <div id="status" class="status">Loading...</div>
+    <div id="players" class="players"></div>
+    <button onclick="fetchStatus()">🔄 Refresh Now</button>
 
     <script>
         async function fetchStatus() {
-            const response = await fetch('https://api.mcsrvstat.us/2/tux.myvnc.com');
-            const data = await response.json();
-
             const statusDiv = document.getElementById('status');
-            if (data.online) {
-                statusDiv.textContent = `🟢 Online: ${data.players.online} players`;
-            } else {
-                statusDiv.textContent = '🔴 Server is offline';
+            const playersDiv = document.getElementById('players');
+            statusDiv.textContent = 'Checking...';
+            playersDiv.textContent = '';
+
+            try {
+                const response = await fetch('https://api.mcsrvstat.us/2/tux.myvnc.com');
+                const data = await response.json();
+
+                if (data.online) {
+                    statusDiv.textContent = `🟢 Online: ${data.players.online} players`;
+
+                    if (data.players.list && data.players.list.length > 0) {
+                        const maskedNames = data.players.list.map(name => {
+                            if (name.length <= 3) return name[0] + '**';
+                            return name.slice(0, 3) + '*'.repeat(name.length - 3);
+                        });
+
+                        playersDiv.textContent = 'Players: ' + maskedNames.join(', ');
+                    } else {
+                        playersDiv.textContent = 'No player names available.';
+                    }
+                } else {
+                    statusDiv.textContent = '🔴 Server Is Offline :(  (tux.myvnc.com)';
+                }
+            } catch (error) {
+                statusDiv.textContent = '⚠️ Error fetching server status';
+                playersDiv.textContent = '';
+                console.error(error);
             }
         }
 
         fetchStatus();
-        setInterval(fetchStatus, 30000); // Refresh every 30 seconds
+        setInterval(fetchStatus, 30000); // Auto-refresh every 30 seconds
     </script>
 </body>
 </html>
